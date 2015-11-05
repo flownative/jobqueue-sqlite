@@ -118,27 +118,28 @@ class SqliteQueue implements QueueInterface
      *
      * @param int $timeout
      * @return Message The received message or NULL if a timeout occurred
-     * @todo implement timeout (actual wait in the method name)
      */
     public function waitAndTake($timeout = null)
     {
         $timeout = ($timeout !== null ? $timeout : $this->defaultTimeout);
 
-        $row = $this->connection->querySingle('SELECT rowid, payload FROM queue ORDER BY rowid ASC LIMIT 1', true);
-        if ($row !== []) {
-            $this->connection->exec('DELETE FROM queue WHERE rowid=' . $row['rowid']);
+        for ($time = 0; $time < $timeout; $time++) {
+            $row = @$this->connection->querySingle('SELECT rowid, payload FROM queue ORDER BY rowid ASC LIMIT 1', true);
+            if ($row !== []) {
+                $this->connection->exec('DELETE FROM queue WHERE rowid=' . $row['rowid']);
 
-            $message = $this->decodeMessage($row['payload']);
-            $message->setIdentifier($row['rowid']);
+                $message = $this->decodeMessage($row['payload']);
+                $message->setIdentifier($row['rowid']);
 
-            // The message is marked as done
-            $message->setState(Message::STATE_DONE);
+                // The message is marked as done
+                $message->setState(Message::STATE_DONE);
 
-            return $message;
-        } else {
+                return $message;
+            }
 
-            return null;
+            sleep(1);
         }
+        return null;
     }
 
     /**
@@ -146,31 +147,34 @@ class SqliteQueue implements QueueInterface
      *
      * @param int $timeout
      * @return Message
-     * @todo implement timeout (actual wait in the method name)
      */
     public function waitAndReserve($timeout = null)
     {
         $timeout = ($timeout !== null ? $timeout : $this->defaultTimeout);
 
-        $row = $this->connection->querySingle('SELECT rowid, payload FROM queue ORDER BY rowid ASC LIMIT 1', true);
-        if ($row !== []) {
-            $message = $this->decodeMessage($row['payload']);
-            $message->setIdentifier($row['rowid']);
+        for ($time = 0; $time < $timeout; $time++) {
+            $row = @$this->connection->querySingle('SELECT rowid, payload FROM queue ORDER BY rowid ASC LIMIT 1', true);
+            if ($row !== []) {
+                $message = $this->decodeMessage($row['payload']);
+                $message->setIdentifier($row['rowid']);
 
-            $encodedMessage = $this->encodeMessage($message);
-            $preparedStatement = $this->connection->prepare('INSERT INTO processing (rowid, payload) VALUES (:rowid, :payload);');
-            $preparedStatement->bindValue(':rowid', $row['rowid']);
-            $preparedStatement->bindValue(':payload', $encodedMessage);
+                $encodedMessage = $this->encodeMessage($message);
+                $preparedStatement = $this->connection->prepare('INSERT INTO processing (rowid, payload) VALUES (:rowid, :payload);');
+                $preparedStatement->bindValue(':rowid', $row['rowid']);
+                $preparedStatement->bindValue(':payload', $encodedMessage);
 
-            $this->connection->query('BEGIN IMMEDIATE TRANSACTION;');
-            $preparedStatement->execute();
-            $this->connection->exec('DELETE FROM queue WHERE rowid=' . $row['rowid']);
-            $this->connection->query('COMMIT TRANSACTION;');
+                $this->connection->query('BEGIN IMMEDIATE TRANSACTION;');
+                $this->connection->exec('DELETE FROM queue WHERE rowid=' . $row['rowid']);
+                $preparedStatement->execute();
+                $this->connection->query('COMMIT TRANSACTION;');
 
-            return $message;
-        } else {
-            return null;
+                return $message;
+            }
+
+            sleep(1);
         }
+
+        return null;
     }
 
     /**
