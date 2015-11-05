@@ -104,9 +104,20 @@ class SqliteQueue implements QueueInterface
      */
     public function submit(Message $message)
     {
+
+        if ($message->getIdentifier() !== NULL) {
+            $preparedStatement = $this->connection->prepare('SELECT rowid FROM queue WHERE msgid=:msgid');
+            $preparedStatement->bindValue(':msgid', $message->getIdentifier());
+            $result = $preparedStatement->execute();
+            if ($result->fetchArray(SQLITE3_NUM) !== FALSE) {
+                return;
+            }
+        }
+
         $encodedMessage = $this->encodeMessage($message);
 
-        $preparedStatement = $this->connection->prepare('INSERT INTO queue (payload) VALUES (:payload);');
+        $preparedStatement = $this->connection->prepare('INSERT INTO queue (msgid, payload) VALUES (:msgid, :payload);');
+        $preparedStatement->bindValue(':msgid', $message->getIdentifier());
         $preparedStatement->bindValue(':payload', $encodedMessage);
         $preparedStatement->execute();
         $message->setIdentifier($this->connection->lastInsertRowID());
@@ -227,6 +238,7 @@ class SqliteQueue implements QueueInterface
      */
     protected function createQueueTables() {
         $this->connection->exec('CREATE TABLE queue (
+            msgid VARCHAR,
             payload VARCHAR
         );');
         $this->connection->exec('CREATE TABLE processing (

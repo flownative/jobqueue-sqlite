@@ -120,4 +120,23 @@ class SqliteQueueTest extends \TYPO3\Flow\Tests\FunctionalTestCase
         $finishResult = $this->queue->finish($message);
         $this->assertTrue($finishResult);
     }
+
+    /**
+     * @test
+     */
+    public function identifierMakesMessagesUnique()
+    {
+        $message = new \TYPO3\Jobqueue\Common\Queue\Message('Yeah, tell someone it works!', 'test.message');
+        $identicalMessage = new \TYPO3\Jobqueue\Common\Queue\Message('Yeah, tell someone it works!', 'test.message');
+        $this->queue->submit($message);
+        $this->queue->submit($identicalMessage);
+
+        $this->assertEquals(\TYPO3\Jobqueue\Common\Queue\Message::STATE_NEW, $identicalMessage->getState());
+
+        $result = $this->queue->waitAndTake(1);
+        $this->assertNotNull($result, 'wait should receive message');
+
+        $result = $this->queue->waitAndTake(1);
+        $this->assertNull($result, 'message should not be queued twice');
+    }
 }
