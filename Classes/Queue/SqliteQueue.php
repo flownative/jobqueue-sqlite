@@ -66,7 +66,8 @@ class SqliteQueue implements QueueInterface
      *
      * @return void
      */
-    protected function initializeObject() {
+    protected function initializeObject()
+    {
         $databaseFilePath = $this->storageFolder . md5($this->name) . '.db';
         $createDatabaseTables = FALSE;
         if (!is_file($databaseFilePath)) {
@@ -79,21 +80,6 @@ class SqliteQueue implements QueueInterface
         if ($createDatabaseTables) {
             $this->createQueueTables();
         }
-    }
-
-    /**
-     * Flushes the queue. Danger, all queued items will be lost.
-     *
-     * This is a method primarily used in testing, not part of the API.
-     *
-     * @return void
-     */
-    public function flushQueue() {
-        $databaseFilePath = $this->storageFolder . md5($this->name) . '.db';
-        if (file_exists($databaseFilePath)) {
-            unlink($databaseFilePath);
-        }
-        $this->initializeObject();
     }
 
     /**
@@ -240,13 +226,30 @@ class SqliteQueue implements QueueInterface
      */
     public function count()
     {
-            return $this->connection->querySingle('SELECT COUNT(rowid) FROM queue');
+        return $this->connection->querySingle('SELECT COUNT(rowid) FROM queue');
+    }
+
+    /**
+     * Flushes the queue. Danger, all queued items will be lost.
+     *
+     * This is a method primarily used in testing, not part of the API.
+     *
+     * @return void
+     */
+    public function flushQueue()
+    {
+        $databaseFilePath = $this->storageFolder . md5($this->name) . '.db';
+        if (file_exists($databaseFilePath)) {
+            unlink($databaseFilePath);
+        }
+        $this->initializeObject();
     }
 
     /**
      * @return void
      */
-    protected function createQueueTables() {
+    protected function createQueueTables()
+    {
         $this->connection->exec('CREATE TABLE queue (
             rowid INTEGER PRIMARY KEY AUTOINCREMENT,
             msgid VARCHAR,

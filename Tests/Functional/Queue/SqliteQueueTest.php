@@ -33,7 +33,6 @@ class SqliteQueueTest extends \TYPO3\Flow\Tests\FunctionalTestCase
     public function setUp()
     {
         parent::setUp();
-        $configurationManager = $this->objectManager->get(ConfigurationManager::class);
 
         $options = ['storageFolder' => FLOW_PATH_DATA . 'Temporary/SqliteQueue/'];
         $this->queue = new SqliteQueue('Test queue', $options);
