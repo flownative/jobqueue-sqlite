@@ -137,7 +137,9 @@ class SqliteQueue implements QueueInterface
         for ($time = 0; $time < $timeout; $time++) {
             $row = @$this->connection->querySingle('SELECT rowid, payload FROM queue ORDER BY rowid ASC LIMIT 1', true);
             if ($row !== []) {
-                $this->connection->exec('DELETE FROM queue WHERE rowid=' . $row['rowid']);
+                $preparedDelete = $this->connection->prepare('DELETE FROM queue WHERE rowid=:rowid');
+                $preparedDelete->bindValue(':rowid', $row['rowid']);
+                $preparedDelete->execute();
 
                 $message = $this->decodeMessage($row['payload']);
                 $message->setIdentifier($row['rowid']);
@@ -170,14 +172,22 @@ class SqliteQueue implements QueueInterface
                 $message->setIdentifier($row['rowid']);
 
                 $encodedMessage = $this->encodeMessage($message);
-                $preparedStatement = $this->connection->prepare('INSERT INTO processing (rowid, payload) VALUES (:rowid, :payload);');
-                $preparedStatement->bindValue(':rowid', $row['rowid']);
-                $preparedStatement->bindValue(':payload', $encodedMessage);
 
-                $this->connection->query('BEGIN IMMEDIATE TRANSACTION;');
-                $this->connection->exec('DELETE FROM queue WHERE rowid=' . $row['rowid']);
-                $preparedStatement->execute();
-                $this->connection->query('COMMIT TRANSACTION;');
+                $preparedDelete = $this->connection->prepare('DELETE FROM queue WHERE rowid=:rowid');
+                $preparedDelete->bindValue(':rowid', $row['rowid']);
+
+                $preparedInsert = $this->connection->prepare('INSERT INTO processing (rowid, payload) VALUES (:rowid, :payload)');
+                $preparedInsert->bindValue(':rowid', $row['rowid']);
+                $preparedInsert->bindValue(':payload', $encodedMessage);
+
+                try {
+                    $this->connection->query('BEGIN IMMEDIATE TRANSACTION');
+                    $preparedDelete->execute();
+                    $preparedInsert->execute();
+                    $this->connection->query('COMMIT');
+                } catch (\Exception $exception) {
+                    $this->connection->query('ROLLBACK');
+                }
 
                 return $message;
             }
@@ -196,7 +206,7 @@ class SqliteQueue implements QueueInterface
      */
     public function finish(Message $message)
     {
-        $success = $this->connection->exec('DELETE FROM processing WHERE rowid=' . $message->getIdentifier());
+        $success = $this->connection->exec('DELETE FROM processing WHERE rowid=' . (int)$message->getIdentifier());
         if ($success) {
             $message->setState(Message::STATE_DONE);
         }
@@ -238,6 +248,7 @@ class SqliteQueue implements QueueInterface
      */
     protected function createQueueTables() {
         $this->connection->exec('CREATE TABLE queue (
+            rowid INTEGER PRIMARY KEY AUTOINCREMENT,
             msgid VARCHAR,
             payload VARCHAR
         );');
