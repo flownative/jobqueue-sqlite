@@ -1,8 +1,8 @@
 <?php
-namespace Flownative\Jobqueue\Sqlite\Queue;
+namespace Flownative\JobQueue\Sqlite\Queue;
 
 /*
- * This file is part of the Flownative.Jobqueue.Sqlite package.
+ * This file is part of the Flownative.JobQueue.Sqlite package.
  *
  * (c) Contributors to the package
  *
@@ -12,8 +12,8 @@ namespace Flownative\Jobqueue\Sqlite\Queue;
  */
 
 use TYPO3\Flow\Annotations as Flow;
-use TYPO3\Jobqueue\Common\Queue\Message;
-use TYPO3\Jobqueue\Common\Queue\QueueInterface;
+use Flowpack\JobQueue\Common\Queue\Message;
+use Flowpack\JobQueue\Common\Queue\QueueInterface;
 
 /**
  * A queue implementation using Sqlite as the queue backend
@@ -45,7 +45,7 @@ class SqliteQueue implements QueueInterface
      *
      * @param string $name
      * @param array $options
-     * @throws \TYPO3\Jobqueue\Common\Exception
+     * @throws \Flowpack\JobQueue\Common\Exception
      */
     public function __construct($name, array $options = array())
     {
@@ -56,7 +56,7 @@ class SqliteQueue implements QueueInterface
         }
 
         if (!isset($options['storageFolder'])) {
-            throw new \TYPO3\Jobqueue\Common\Exception('No storageFolder configured for SqliteQueue.', 1445527553);
+            throw new \Flowpack\JobQueue\Common\Exception('No storageFolder configured for SqliteQueue.', 1445527553);
         }
         $this->storageFolder = $options['storageFolder'];
     }

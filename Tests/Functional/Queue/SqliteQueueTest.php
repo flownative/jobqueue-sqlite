@@ -1,8 +1,8 @@
 <?php
-namespace Flownative\Jobqueue\Sqlite\Tests\Functional\Queue;
+namespace Flownative\JobQueue\Sqlite\Tests\Functional\Queue;
 
 /*
- * This file is part of the Flownative.Jobqueue.Sqlite package.
+ * This file is part of the Flownative.JobQueue.Sqlite package.
  *
  * (c) Contributors to the package
  *
@@ -11,9 +11,9 @@ namespace Flownative\Jobqueue\Sqlite\Tests\Functional\Queue;
  * source code.
  */
 
-use Flownative\Jobqueue\Sqlite\Queue\SqliteQueue;
+use Flownative\JobQueue\Sqlite\Queue\SqliteQueue;
 use TYPO3\Flow\Configuration\ConfigurationManager;
-use TYPO3\Jobqueue\Common\Queue\Message;
+use Flowpack\JobQueue\Common\Queue\Message;
 
 /**
  * Functional test for SqliteQueue
@@ -125,12 +125,12 @@ class SqliteQueueTest extends \TYPO3\Flow\Tests\FunctionalTestCase
      */
     public function identifierMakesMessagesUnique()
     {
-        $message = new \TYPO3\Jobqueue\Common\Queue\Message('Yeah, tell someone it works!', 'test.message');
-        $identicalMessage = new \TYPO3\Jobqueue\Common\Queue\Message('Yeah, tell someone it works!', 'test.message');
+        $message = new \Flowpack\JobQueue\Common\Queue\Message('Yeah, tell someone it works!', 'test.message');
+        $identicalMessage = new \Flowpack\JobQueue\Common\Queue\Message('Yeah, tell someone it works!', 'test.message');
         $this->queue->submit($message);
         $this->queue->submit($identicalMessage);
 
-        $this->assertEquals(\TYPO3\Jobqueue\Common\Queue\Message::STATE_NEW, $identicalMessage->getState());
+        $this->assertEquals(\Flowpack\JobQueue\Common\Queue\Message::STATE_NEW, $identicalMessage->getState());
 
         $result = $this->queue->waitAndTake(1);
         $this->assertNotNull($result, 'wait should receive message');

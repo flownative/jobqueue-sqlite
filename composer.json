@@ -4,11 +4,11 @@
     "description": "A job queue implementation based on Sqlite",
     "license": "MIT",
     "require": {
-        "typo3/jobqueue-common": "*"
+        "flowpack/jobqueue-common": "*"
     },
     "autoload": {
         "psr-4": {
-            "Flownative\\Jobqueue\\Sqlite\\": "Classes"
+            "Flownative\\JobQueue\\Sqlite\\": "Classes"
         }
     }
 }
